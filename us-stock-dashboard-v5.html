@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US 매매 타이밍 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f5;
+  --s1: #ffffff;
+  --s2: #f7f8fa;
+  --s3: #eef0f3;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.15);
+  --text: #1a1a2e;
+  --muted: #7a7a96;
+  --dim: #b0b0c8;
+  --up: #0a9e5c;
+  --dn: #d63031;
+  --warn: #d68000;
+  --info: #1a6fd4;
+  --purple: #6c3fc7;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Noto Sans KR', sans-serif;
+  --r: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:14px;
+  min-height:100vh;
+  padding:18px 22px;
+  line-height:1.4;
+}
+
+
+
+/* ── Header ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:16px;border-bottom:0.5px solid var(--border2);margin-bottom:18px;
+}
+.logo{
+  font-family:var(--mono);font-size:15px;font-weight:600;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--info);
+  text-shadow:none;
+}
+.logo em{color:var(--text);font-style:normal;}
+.header-right{display:flex;align-items:center;gap:14px;}
+#clock{font-family:var(--mono);font-size:12px;color:var(--muted);}
+.mkt-badge{
+  font-family:var(--mono);font-size:10px;letter-spacing:1px;
+  padding:3px 10px;border-radius:20px;
+}
+.open{background:rgba(61,220,132,0.12);color:var(--up);border:0.5px solid rgba(61,220,132,0.3);}
+.closed{background:rgba(90,90,114,0.15);color:var(--muted);border:0.5px solid var(--border2);}
+.pre{background:rgba(255,179,71,0.12);color:var(--warn);border:0.5px solid rgba(255,179,71,0.3);}
+
+/* ── Refresh ── */
+.ctrl-row{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+}
+.ctrl-left{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;}
+#refresh-btn{
+  background:var(--s3);border:0.5px solid var(--border2);
+  color:var(--text);padding:5px 16px;border-radius:6px;
+  cursor:pointer;font-size:11px;font-family:var(--sans);
+  transition:all 0.15s;letter-spacing:0.5px;
+}
+#refresh-btn:hover{background:var(--s2);border-color:var(--info);}
+#refresh-btn.spin{opacity:0.5;pointer-events:none;}
+
+/* ── Section ── */
+.sec-label{
+  font-family:var(--mono);font-size:9px;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--dim);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+.sec-label::after{content:'';flex:1;height:0.5px;background:var(--border);}
+.section{margin-bottom:20px;}
+
+/* ── Grid ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.gauto{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+
+/* ── Card ── */
+.card{
+  background:var(--s1);border:0.5px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;
+  transition:border-color 0.2s,transform 0.15s;
+}
+.card:hover{border-color:var(--border2);box-shadow:0 4px 16px rgba(0,0,0,0.08);}
+.cl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.cn{font-size:11px;color:var(--muted);margin-bottom:7px;}
+.cp{font-family:var(--mono);font-size:22px;font-weight:500;line-height:1;margin-bottom:4px;}
+.cc{font-family:var(--mono);font-size:12px;font-weight:500;}
+.cm{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;}
+.up{color:var(--up);} .dn{color:var(--dn);} .fl{color:var(--muted);}
+
+/* accent borders */
+.ab-blue{border-left:2px solid var(--info);}
+.ab-green{border-left:2px solid var(--up);}
+.ab-red{border-left:2px solid var(--dn);}
+.ab-yellow{border-left:2px solid var(--warn);}
+.ab-purple{border-left:2px solid var(--purple);}
+
+/* ── Fear & Greed ── */
+.fg-wrap{
+  background:var(--s1);border:0.5px solid var(--border);
+  border-radius:var(--r);padding:18px 22px;
+  display:flex;align-items:center;gap:32px;
+  margin-bottom:12px;
+}
+.fg-num{font-family:var(--mono);font-size:64px;font-weight:600;line-height:1;}
+.fg-right{flex:1;}
+.fg-title{font-size:18px;font-weight:500;margin-bottom:4px;}
+.fg-sub{font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6;}
+.fg-hist{display:flex;gap:18px;font-family:var(--mono);font-size:10px;color:var(--muted);}
+.fg-hist span{color:var(--text);}
+.fg-bar{height:5px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,0.06);margin-top:12px;}
+.fg-bar-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+
+/* ── Signal Panel ── */
+.signal-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;
+}
+.sig-card{
+  background:var(--s1);border:0.5px solid var(--border);
+  border-radius:var(--r);padding:12px 14px;
+  display:flex;align-items:center;gap:12px;
+}
+.sig-icon{
+  width:36px;height:36px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.sig-bull{background:rgba(61,220,132,0.12);color:var(--up);}
+.sig-bear{background:rgba(255,92,92,0.12);color:var(--dn);}
+.sig-neu{background:rgba(255,179,71,0.12);color:var(--warn);}
+.sig-info{background:rgba(91,156,246,0.12);color:var(--info);}
+.sig-label{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:0.5px;}
+.sig-val{font-family:var(--mono);font-size:14px;font-weight:500;}
+.sig-desc{font-size:10px;color:var(--muted);margin-top:1px;}
+
+/* ── Oil card big ── */
+.oil-card{
+  background:var(--s1);border:0.5px solid var(--border);border-left:2px solid var(--warn);
+  border-radius:var(--r);padding:16px;
+}
+.oil-price{font-family:var(--mono);font-size:32px;font-weight:500;margin:6px 0 4px;}
+.oil-range-wrap{margin-top:10px;}
+.oil-range-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:4px;}
+.oil-range-bg{height:5px;background:rgba(255,255,255,0.06);border-radius:3px;position:relative;overflow:visible;}
+.oil-range-fill{position:absolute;height:100%;background:linear-gradient(90deg,var(--info),var(--warn));border-radius:3px;}
+.oil-needle{
+  position:absolute;top:-4px;width:2px;height:13px;
+  background:var(--warn);border-radius:1px;transform:translateX(-50%);
+  box-shadow:0 0 6px rgba(255,179,71,0.6);
+}
+.oil-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;}
+.oil-stat-label{font-size:9px;color:var(--muted);font-family:var(--mono);}
+.oil-stat-val{font-family:var(--mono);font-size:12px;font-weight:500;margin-top:2px;}
+
+/* ── Heatmap ── */
+.heatmap-wrap{
+  background:var(--s1);border:0.5px solid var(--border);
+  border-radius:var(--r);padding:14px;overflow:hidden;
+}
+#heatmap-grid{
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:3px;margin-top:10px;
+}
+.hm-cell{
+  border-radius:4px;padding:4px 3px;cursor:default;
+  transition:transform 0.1s,opacity 0.1s;
+  position:relative;overflow:hidden;
+}
+.hm-cell:hover{transform:scale(1.05);z-index:10;opacity:1!important;}
+.hm-tick{font-family:var(--mono);font-size:8px;font-weight:600;line-height:1;}
+.hm-pct{font-family:var(--mono);font-size:7px;margin-top:1px;}
+.hm-legend{
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:9px;color:var(--muted);
+  margin-top:8px;
+}
+.hm-leg-bar{
+  flex:1;height:4px;border-radius:2px;
+  background:linear-gradient(90deg,#b33333,#cc4444,#666,#339966,#22aa66);
+}
+
+/* ── VIX ── */
+.vix-bar-bg{width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:8px;}
+.vix-bar-fill{height:100%;border-radius:3px;transition:width 0.8s;}
+.vix-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:3px;}
+
+/* ── NDX chart ── */
+.chart-card{
+  background:var(--s1);border:0.5px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;
+}
+.chart-wrap{position:relative;height:130px;margin-top:10px;}
+
+/* ── Badge ── */
+.badge{
+  display:inline-block;font-size:8px;font-family:var(--mono);
+  padding:1px 6px;border-radius:3px;letter-spacing:0.5px;
+  vertical-align:middle;margin-left:5px;
+}
+.b-lev{background:rgba(157,125,234,0.15);color:var(--purple);border:0.5px solid rgba(157,125,234,0.3);}
+.b-inv{background:rgba(255,92,92,0.12);color:var(--dn);border:0.5px solid rgba(255,92,92,0.25);}
+.b-etf{background:rgba(91,156,246,0.1);color:var(--info);border:0.5px solid rgba(91,156,246,0.2);}
+
+/* ── Divider ── */
+.div{height:0.5px;background:var(--border);margin:6px 0;}
+
+/* ── Footer ── */
+footer{
+  margin-top:22px;padding-top:12px;border-top:0.5px solid var(--border);
+  display:flex;justify-content:space-between;
+  font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:0.5px;
+}
+
+/* ── Responsive ── */
+@media(max-width:900px){.g4,.g5{grid-template-columns:repeat(2,1fr);}.g3{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.g2,.g3,.g4,.g5{grid-template-columns:1fr;}.fg-wrap{flex-direction:column;}}
+
+/* ── Animations ── */
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+.loading-dot{display:inline-block;animation:pulse 1s ease-in-out infinite;}
+
+/* ── Tooltip ── */
+.tip{position:relative;}
+.tip:hover::after{
+  content:attr(data-tip);
+  position:absolute;bottom:120%;left:50%;transform:translateX(-50%);
+  background:var(--s3);border:0.5px solid var(--border2);
+  color:var(--text);font-size:10px;font-family:var(--mono);
+  padding:4px 8px;border-radius:4px;white-space:nowrap;
+  z-index:100;pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="logo"><em>US</em> TIMING<em> ·</em> DESK</div>
+  <div class="header-right">
+    <div id="clock">—</div>
+    <div id="mkt-badge" class="mkt-badge closed">CLOSED</div>
+  </div>
+</header>
+
+<div class="ctrl-row">
+  <div class="ctrl-left" id="last-upd">LAST UPDATE: —</div>
+  <button id="refresh-btn" onclick="fetchAll()">↻ REFRESH</button>
+</div>
+
+<!-- ═══ 1. FEAR & GREED + SIGNAL ═══ -->
+<div class="section">
+  <div class="sec-label">공포탐욕 & 매매 신호</div>
+
+  <div class="fg-wrap">
+    <div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">FEAR & GREED INDEX</div>
+      <div class="fg-num up" id="fg-num">—</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;" id="fg-label">—</div>
+    </div>
+    <div class="fg-right">
+      <div class="fg-title" id="fg-title">로딩 중...</div>
+      <div class="fg-sub" id="fg-sub">CNN Fear &amp; Greed 데이터를 불러오는 중입니다.</div>
+      <div class="fg-hist" id="fg-hist">
+        <div>전주 <span id="fg-pw">—</span></div>
+        <div>전월 <span id="fg-pm">—</span></div>
+        <div>전년 <span id="fg-py">—</span></div>
+      </div>
+      <div class="fg-bar" style="margin-top:12px;">
+        <div class="fg-bar-fill" id="fg-bar-fill" style="width:0%;background:var(--muted);"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:3px;">
+        <span>극공포 0</span><span>공포 25</span><span>중립 50</span><span>탐욕 75</span><span>극탐욕 100</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signal cards -->
+  <div class="signal-grid" id="signal-grid">
+    <div class="sig-card">
+      <div class="sig-icon sig-info">📊</div>
+      <div>
+        <div class="sig-label">VIX LEVEL</div>
+        <div class="sig-val" id="sig-vix">—</div>
+        <div class="sig-desc" id="sig-vix-desc">—</div>
+      </div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon sig-neu" id="sig-fg-icon">⚡</div>
+      <div>
+        <div class="sig-label">F&G 신호</div>
+        <div class="sig-val" id="sig-fg-val">—</div>
+        <div class="sig-desc" id="sig-fg-desc">—</div>
+      </div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon sig-info">🛢️</div>
+      <div>
+        <div class="sig-label">유가 신호</div>
+        <div class="sig-val" id="sig-oil-val">—</div>
+        <div class="sig-desc" id="sig-oil-desc">WTI vs 30일 평균</div>
+      </div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon sig-info">📈</div>
+      <div>
+        <div class="sig-label">NDX 모멘텀</div>
+        <div class="sig-val" id="sig-ndx-val">—</div>
+        <div class="sig-desc" id="sig-ndx-desc">나스닥 5일 수익률</div>
+      </div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon sig-info">💵</div>
+      <div>
+        <div class="sig-label">USD/KRW</div>
+        <div class="sig-val" id="sig-krw-val">—</div>
+        <div class="sig-desc" id="sig-krw-desc">원달러 방향</div>
+      </div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon sig-info">🏛️</div>
+      <div>
+        <div class="sig-label">10Y 금리</div>
+        <div class="sig-val" id="sig-bond-val">—</div>
+        <div class="sig-desc" id="sig-bond-desc">국채 수익률</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 2. 주요 지수 ═══ -->
+<div class="section">
+  <div class="sec-label">주요 지수</div>
+  <div class="g4">
+    <div class="card ab-blue">
+      <div class="cl">^GSPC</div><div class="cn">S&P 500</div>
+      <div class="cp" id="price-SPY">—</div>
+      <div class="cc" id="change-SPY">—</div>
+    </div>
+    <div class="card ab-blue">
+      <div class="cl">^NDX</div><div class="cn">나스닥 100</div>
+      <div class="cp" id="price-QQQ">—</div>
+      <div class="cc" id="change-QQQ">—</div>
+    </div>
+    <div class="card ab-blue">
+      <div class="cl">^DJI</div><div class="cn">다우 존스</div>
+      <div class="cp" id="price-DIA">—</div>
+      <div class="cc" id="change-DIA">—</div>
+    </div>
+    <div class="card ab-yellow">
+      <div class="cl">^VIX</div><div class="cn">VIX 공포지수</div>
+      <div class="cp" id="price-VIX">—</div>
+      <div class="cc" id="change-VIX">—</div>
+      <div class="vix-bar-bg"><div class="vix-bar-fill" id="vix-bar" style="width:0%;"></div></div>
+      <div class="vix-ticks"><span>10</span><span>20</span><span>30</span><span>50+</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 3. 나스닥100 & 유가 ═══ -->
+<div class="section">
+  <div class="sec-label">나스닥 100 & 유가</div>
+  <div class="g2" style="align-items:start;">
+
+    <!-- 나스닥100 히트맵 -->
+    <div class="heatmap-wrap">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;">나스닥 100 주요 종목</div>
+      <div id="heatmap-grid"></div>
+      <div class="hm-legend" style="margin-top:8px;">
+        <span>-5%+</span>
+        <div class="hm-leg-bar"></div>
+        <span>+5%+</span>
+      </div>
+    </div>
+
+    <!-- 유가 패널 -->
+    <div>
+      <div class="oil-card" style="margin-bottom:10px;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;">WTI CRUDE OIL · CL=F</div>
+        <div class="oil-price" id="oil-price">—</div>
+        <div class="cc" id="oil-change">—</div>
+        <div class="oil-range-wrap">
+          <div class="oil-range-label">
+            <span id="oil-low52">52주 저점</span>
+            <span style="color:var(--warn);">▼ 현재</span>
+            <span id="oil-high52">52주 고점</span>
+          </div>
+          <div class="oil-range-bg">
+            <div class="oil-range-fill" id="oil-range-fill" style="width:0%;"></div>
+            <div class="oil-needle" id="oil-needle" style="left:50%;"></div>
+          </div>
+        </div>
+        <div class="oil-stats">
+          <div>
+            <div class="oil-stat-label">일 고가</div>
+            <div class="oil-stat-val" id="oil-high">—</div>
+          </div>
+          <div>
+            <div class="oil-stat-label">일 저가</div>
+            <div class="oil-stat-val" id="oil-low">—</div>
+          </div>
+          <div>
+            <div class="oil-stat-label">브렌트유</div>
+            <div class="oil-stat-val" id="brent-price">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 금 / 달러 -->
+      <div class="g2">
+        <div class="card ab-yellow">
+          <div class="cl">GC=F</div><div class="cn">금 선물</div>
+          <div class="cp" id="price-GC">—</div>
+          <div class="cc" id="change-GC">—</div>
+        </div>
+        <div class="card">
+          <div class="cl">KRW=X</div><div class="cn">USD/KRW</div>
+          <div class="cp" id="price-KRW">—</div>
+          <div class="cc" id="change-KRW">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 4. 테슬라 ═══ -->
+<div class="section">
+  <div class="sec-label">테슬라 TSLA</div>
+  <div class="g2">
+    <div class="card ab-green" style="padding:18px 20px;">
+      <div class="cl">TSLA · NASDAQ</div>
+      <div class="cp" style="font-size:36px;" id="price-TSLA">—</div>
+      <div class="cc" style="font-size:15px;" id="change-TSLA">—</div>
+      <div class="div" style="margin-top:14px;"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;">
+        <div><div class="cm">일 고가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsla-h">—</div></div>
+        <div><div class="cm">일 저가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsla-l">—</div></div>
+        <div><div class="cm">거래량</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsla-v">—</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;">TSLA 5분봉</div>
+      <div class="chart-wrap"><canvas id="tsla-chart" role="img" aria-label="테슬라 당일 5분봉 차트">Tesla intraday chart</canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 5. 레버리지 ETF ═══ -->
+<div class="section">
+  <div class="sec-label">레버리지 / 인버스 ETF</div>
+  <div class="gauto">
+    <div class="card ab-purple">
+      <div class="cl">TQQQ <span class="badge b-lev">3X 롱</span></div>
+      <div class="cn">나스닥 3배</div>
+      <div class="cp" id="price-TQQQ">—</div><div class="cc" id="change-TQQQ">—</div>
+    </div>
+    <div class="card ab-purple">
+      <div class="cl">SOXL <span class="badge b-lev">3X 롱</span></div>
+      <div class="cn">반도체 3배</div>
+      <div class="cp" id="price-SOXL">—</div><div class="cc" id="change-SOXL">—</div>
+    </div>
+    <div class="card ab-purple">
+      <div class="cl">UPRO <span class="badge b-lev">3X 롱</span></div>
+      <div class="cn">S&P 3배</div>
+      <div class="cp" id="price-UPRO">—</div><div class="cc" id="change-UPRO">—</div>
+    </div>
+    <div class="card ab-purple">
+      <div class="cl">TSLL <span class="badge b-lev">2X 롱</span></div>
+      <div class="cn">테슬라 2배</div>
+      <div class="cp" id="price-TSLL">—</div><div class="cc" id="change-TSLL">—</div>
+    </div>
+    <div class="card ab-red">
+      <div class="cl">SQQQ <span class="badge b-inv">3X 인버스</span></div>
+      <div class="cn">나스닥 -3배</div>
+      <div class="cp" id="price-SQQQ">—</div><div class="cc" id="change-SQQQ">—</div>
+    </div>
+    <div class="card ab-red">
+      <div class="cl">SPXS <span class="badge b-inv">3X 인버스</span></div>
+      <div class="cn">S&P -3배</div>
+      <div class="cp" id="price-SPXS">—</div><div class="cc" id="change-SPXS">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 6. 채권 ═══ -->
+<div class="section">
+  <div class="sec-label">채권 & 원자재</div>
+  <div class="g4">
+    <div class="card">
+      <div class="cl">^TNX</div><div class="cn">미국 10년 국채</div>
+      <div class="cp" id="price-TNX">—</div><div class="cc" id="change-TNX">—</div>
+    </div>
+    <div class="card">
+      <div class="cl">^FVX</div><div class="cn">미국 5년 국채</div>
+      <div class="cp" id="price-FVX">—</div><div class="cc" id="change-FVX">—</div>
+    </div>
+    <div class="card">
+      <div class="cl">BZ=F</div><div class="cn">브렌트유 선물</div>
+      <div class="cp" id="price-BZ">—</div><div class="cc" id="change-BZ">—</div>
+    </div>
+    <div class="card">
+      <div class="cl">SI=F</div><div class="cn">은 선물</div>
+      <div class="cp" id="price-SI">—</div><div class="cc" id="change-SI">—</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>DATA: YAHOO FINANCE · CNN F&G · ALLORIGINS PROXY</span>
+  <span>AUTO REFRESH 5MIN · <span id="footer-t">—</span></span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ═══════════════════════════════════
+   시계 & 장 상태
+═══════════════════════════════════ */
+function isDST(d){const j=new Date(d.getFullYear(),0,1).getTimezoneOffset(),u=new Date(d.getFullYear(),6,1).getTimezoneOffset();return Math.max(j,u)!==d.getTimezoneOffset();}
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=now.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul'});
+  const etOff=isDST(now)?-4:-5;
+  const et=new Date(now.getTime()+(etOff*3600*1000));
+  const h=et.getUTCHours(),m=et.getUTCMinutes(),min=h*60+m;
+  const wd=et.getUTCDay();
+  const el=document.getElementById('mkt-badge');
+  if(!wd||wd===6){el.textContent='CLOSED';el.className='mkt-badge closed';}
+  else if(min>=570&&min<960){el.textContent='● OPEN';el.className='mkt-badge open';}
+  else if(min>=540&&min<570){el.textContent='◐ PRE';el.className='mkt-badge pre';}
+  else if(min>=960&&min<1140){el.textContent='◑ AFTER';el.className='mkt-badge pre';}
+  else{el.textContent='CLOSED';el.className='mkt-badge closed';}
+}
+setInterval(updateClock,1000);updateClock();
+
+/* ═══════════════════════════════════
+   포맷
+═══════════════════════════════════ */
+const P=(n,d=2)=>n==null?'—':'$'+n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const PCT=(n)=>n==null?'—':(n>=0?'+':'')+n.toFixed(2)+'%';
+const IDX=(n)=>n==null?'—':n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const FX=(n)=>n==null?'—':n.toLocaleString('ko-KR',{minimumFractionDigits:1,maximumFractionDigits:1})+'₩';
+const BOND=(n)=>n==null?'—':n.toFixed(3)+'%';
+const VOL=(n)=>n==null?'—':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n.toFixed(0);
+const CC=(v)=>v>0?'up':v<0?'dn':'fl';
+
+function setCard(id,price,chg,pct,fmt){
+  const pe=document.getElementById('price-'+id);
+  const ce=document.getElementById('change-'+id);
+  if(!pe)return;
+  const fmtPrice=fmt==='idx'?IDX(price):fmt==='fx'?FX(price):fmt==='bond'?BOND(price):P(price);
+  pe.textContent=fmtPrice;
+  pe.className='cp '+(chg>0?'up':chg<0?'dn':'fl');
+  if(ce){
+    const sign=chg>=0?'+':'';
+    const chgFmt=fmt==='idx'?(sign+chg.toFixed(2)):fmt==='bond'?(sign+chg.toFixed(3)+'%'):fmt==='fx'?(sign+chg.toFixed(1)+'₩'):(sign+'$'+Math.abs(chg).toFixed(2));
+    ce.textContent=`${chgFmt}  (${sign}${pct.toFixed(2)}%)`;
+    ce.className='cc '+(chg>0?'up':chg<0?'dn':'fl');
+  }
+}
+
+/* ═══════════════════════════════════
+   Yahoo Finance via allorigins
+═══════════════════════════════════ */
+async function proxyFetch(rawUrl){
+  const enc=encodeURIComponent(rawUrl);
+  const proxies=[
+    `https://api.allorigins.win/raw?url=${enc}`,
+    `https://corsproxy.io/?${enc}`,
+    `https://api.codetabs.com/v1/proxy?quest=${enc}`,
+  ];
+  for(const p of proxies){
+    try{
+      const r=await fetch(p,{signal:AbortSignal.timeout(10000)});
+      if(!r.ok)continue;
+      const txt=await r.text();
+      if(!txt||txt.length<10)continue;
+      return JSON.parse(txt);
+    }catch(e){continue;}
+  }
+  throw new Error('All proxies failed');
+}
+async function yfFetch(sym,range='2d',interval='1d'){
+  const safeSym=sym.replace('^','%5E');
+  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${safeSym}?range=${range}&interval=${interval}&includePrePost=true`;
+  return proxyFetch(url);
+}
+
+async function getQuote(sym){
+  const d=await yfFetch(sym);
+  const m=d.chart.result[0].meta;
+  const q=d.chart.result[0].indicators.quote[0];
+  const closes=q.close.filter(Boolean);
+  const prev=m.chartPreviousClose||closes[closes.length-2]||m.previousClose;
+  const price=m.regularMarketPrice??m.regularMarketPreviousClose;
+  const chg=price-prev, pct=(chg/prev)*100;
+  return{price,chg,pct,prev,high:m.regularMarketDayHigh,low:m.regularMarketDayLow,vol:m.regularMarketVolume};
+}
+
+async function getIntraday(sym){
+  const d=await yfFetch(sym,'1d','5m');
+  const r=d.chart.result[0];
+  const ts=r.timestamp||[];
+  const closes=r.indicators.quote[0].close||[];
+  return ts.map((t,i)=>({t:new Date(t*1000),v:closes[i]})).filter(p=>p.v!=null);
+}
+
+/* ═══════════════════════════════════
+   공포탐욕
+═══════════════════════════════════ */
+async function getFG(){
+  const fgUrl='https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
+  const d=await proxyFetch(fgUrl);
+  return{
+    score:Math.round(d.fear_and_greed.score),
+    rating:d.fear_and_greed.rating,
+    pw:Math.round(d.fear_and_greed_historical?.previous_1_week?.score||0),
+    pm:Math.round(d.fear_and_greed_historical?.previous_1_month?.score||0),
+    py:Math.round(d.fear_and_greed_historical?.previous_1_year?.score||0),
+  };
+}
+
+function fgColor(s){return s<=25?'#ff5c5c':s<=40?'#ff8c42':s<=60?'#ffb347':s<=75?'#7ddc7d':'#3ddc84';}
+function fgKor(r){return{ExtremeF:'극도 공포',Fear:'공포',Neutral:'중립',Greed:'탐욕',ExtremeG:'극도 탐욕'}[r.replace(/\s+/g,'')] || r;}
+function fgSig(s){
+  if(s<=20)return['매수 신호 강','극공포 — 역발상 매수 구간'];
+  if(s<=35)return['매수 가능','공포 구간 — 분할 매수 고려'];
+  if(s<=65)return['중립 관망','추세 확인 후 진입'];
+  if(s<=80)return['주의 과열','탐욕 — 신규 진입 자제'];
+  return['매도 신호','극탐욕 — 차익 실현 고려'];
+}
+
+/* ═══════════════════════════════════
+   히트맵 데이터
+═══════════════════════════════════ */
+const NDX100 = [
+  'AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AVGO','COST','NFLX',
+  'ASML','AMD','ADBE','QCOM','INTC','TXN','MU','AMAT','LRCX','KLAC',
+  'PANW','CRWD','SNPS','CDNS','ADI','MRVL','ON','MPWR','MCHP','NXPI',
+  'GOOG','CSCO','PYPL','ANET','FTNT','TEAM','ZS','DDOG','OKTA','WDAY',
+  'ISRG','IDXX','ILMN','REGN','VRTX','MRNA','BIIB','ALXN','GILD','AMGN',
+];
+
+function hmColor(pct){
+  const clamped=Math.max(-5,Math.min(5,pct));
+  if(clamped<0){
+    const t=Math.abs(clamped)/5;
+    const r=Math.round(50+t*180),g=Math.round(30+t*30),b=Math.round(30);
+    return`rgb(${r},${g},${b})`;
+  }else{
+    const t=clamped/5;
+    const r=Math.round(20),g=Math.round(100+t*130),b=Math.round(50+t*30);
+    return`rgb(${r},${g},${b})`;
+  }
+}
+
+function renderHeatmap(data){
+  const grid=document.getElementById('heatmap-grid');
+  grid.innerHTML='';
+  const entries=Object.entries(data).slice(0,50);
+  entries.forEach(([sym,{pct}])=>{
+    const cell=document.createElement('div');
+    cell.className='hm-cell';
+    cell.style.background=hmColor(pct);
+    cell.style.minHeight='44px';
+    cell.title=`${sym}: ${pct>=0?'+':''}${pct.toFixed(2)}%`;
+    const sign=pct>=0?'+':'';
+    cell.innerHTML=`<div class="hm-tick">${sym}</div><div class="hm-pct" style="color:rgba(255,255,255,0.85)">${sign}${pct.toFixed(1)}%</div>`;
+    grid.appendChild(cell);
+  });
+}
+
+/* ═══════════════════════════════════
+   TSLA 차트
+═══════════════════════════════════ */
+let tslaChart=null;
+function renderTslaChart(pts){
+  const labels=pts.map(p=>p.t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}));
+  const vals=pts.map(p=>p.v);
+  const first=vals[0],last=vals[vals.length-1];
+  const c=last>=first?'#3ddc84':'#ff5c5c';
+  const ctx=document.getElementById('tsla-chart').getContext('2d');
+  if(tslaChart)tslaChart.destroy();
+  tslaChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{data:vals,borderColor:c,borderWidth:1.5,pointRadius:0,tension:0.3,fill:{target:'origin',above:c+'15'}}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>' $'+c.parsed.y.toFixed(2)}}},
+      scales:{
+        x:{ticks:{color:'#5a5a72',font:{size:8,family:'JetBrains Mono'},maxTicksLimit:6,autoSkip:true},grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.06)'}},
+        y:{ticks:{color:'#5a5a72',font:{size:8,family:'JetBrains Mono'},callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.06)'}}
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════
+   신호 업데이트
+═══════════════════════════════════ */
+function updateSignals(vix,fg,oilChg,ndxPct,krwChg,bondPct){
+  // VIX
+  const vs=document.getElementById('sig-vix');
+  const vd=document.getElementById('sig-vix-desc');
+  if(vix!=null){
+    vs.textContent=vix.toFixed(2);
+    vs.className='sig-val '+(vix<15?'up':vix<25?'fl':vix<35?'dn':'dn');
+    vd.textContent=vix<15?'안정 — 시장 낙관':vix<25?'보통 — 정상 변동성':vix<35?'주의 — 높은 공포':'패닉 구간';
+  }
+  // F&G
+  if(fg!=null){
+    const [v,desc]=fgSig(fg);
+    document.getElementById('sig-fg-val').textContent=v;
+    document.getElementById('sig-fg-desc').textContent=desc;
+    const icon=document.getElementById('sig-fg-icon');
+    icon.className='sig-icon '+(fg<=35?'sig-bull':fg<=65?'sig-neu':'sig-bear');
+  }
+  // Oil
+  if(oilChg!=null){
+    const ov=document.getElementById('sig-oil-val');
+    const od=document.getElementById('sig-oil-desc');
+    ov.textContent=(oilChg>=0?'+':'')+oilChg.toFixed(2)+'%';
+    ov.className='sig-val '+(oilChg>2?'dn':oilChg<-2?'up':'fl');
+    od.textContent=oilChg>3?'유가 급등 — 인플레 압력':oilChg<-3?'유가 급락 — 경기침체 우려':'유가 안정';
+  }
+  // NDX
+  if(ndxPct!=null){
+    const nv=document.getElementById('sig-ndx-val');
+    nv.textContent=(ndxPct>=0?'+':'')+ndxPct.toFixed(2)+'%';
+    nv.className='sig-val '+(ndxPct>0?'up':'dn');
+    document.getElementById('sig-ndx-desc').textContent=ndxPct>2?'강한 상승 모멘텀':ndxPct<-2?'하락 압력':ndxPct>0?'소폭 상승':'소폭 하락';
+  }
+  // KRW
+  if(krwChg!=null){
+    const kv=document.getElementById('sig-krw-val');
+    kv.textContent=(krwChg>=0?'+':'')+krwChg.toFixed(1)+'₩';
+    kv.className='sig-val '+(krwChg>10?'dn':krwChg<-10?'up':'fl');
+    document.getElementById('sig-krw-desc').textContent=krwChg>15?'달러 강세 — 위험회피':krwChg<-15?'달러 약세 — 위험선호':'달러 보합';
+  }
+  // Bond
+  if(bondPct!=null){
+    const bv=document.getElementById('sig-bond-val');
+    bv.textContent=bondPct.toFixed(3)+'%';
+    bv.className='sig-val '+(bondPct>4.5?'dn':bondPct<3.5?'up':'fl');
+    document.getElementById('sig-bond-desc').textContent=bondPct>4.5?'금리 고공 — 성장주 압박':bondPct<3.5?'금리 하락 — 성장주 우호':'금리 보통';
+  }
+}
+
+/* ═══════════════════════════════════
+   MAIN FETCH
+═══════════════════════════════════ */
+async function fetchAll(){
+  const btn=document.getElementById('refresh-btn');
+  btn.textContent='LOADING...';btn.classList.add('spin');
+
+  // F&G
+  try{
+    const fg=await getFG();
+    document.getElementById('fg-num').textContent=fg.score;
+    document.getElementById('fg-num').className='fg-num '+(fg.score>=50?'up':'dn');
+    document.getElementById('fg-label').textContent=fgKor(fg.rating).toUpperCase();
+    document.getElementById('fg-title').textContent=fgKor(fg.rating);
+    document.getElementById('fg-sub').textContent=fgSig(fg.score)[1];
+    document.getElementById('fg-pw').textContent=fg.pw;
+    document.getElementById('fg-pm').textContent=fg.pm;
+    document.getElementById('fg-py').textContent=fg.py;
+    const fill=document.getElementById('fg-bar-fill');
+    fill.style.width=fg.score+'%';
+    fill.style.background=fgColor(fg.score);
+    window._fg=fg.score;
+  }catch(e){document.getElementById('fg-title').textContent='F&G 로드 실패';}
+
+  // 지수 & 다른 종목들
+  const syms=[
+    ['SPY','^GSPC','idx'],['QQQ','^NDX','idx'],['DIA','^DJI','idx'],['VIX','^VIX','bond'],
+    ['TSLA','TSLA','price'],
+    ['TQQQ','TQQQ','price'],['SOXL','SOXL','price'],['UPRO','UPRO','price'],
+    ['TSLL','TSLL','price'],['SQQQ','SQQQ','price'],['SPXS','SPXS','price'],
+    ['KRW','KRW=X','fx'],['GC','GC=F','price'],
+    ['TNX','^TNX','bond'],['FVX','^FVX','bond'],['BZ','BZ=F','price'],['SI','SI=F','price'],
+  ];
+
+  let vixVal=null,ndxPct=null,oilPct=null,krwChg=null,bondVal=null;
+
+  await Promise.allSettled(syms.map(async([id,yfSym,fmt])=>{
+    try{
+      const q=await getQuote(yfSym);
+      setCard(id,q.price,q.chg,q.pct,fmt);
+      if(id==='VIX'){
+        vixVal=q.price;
+        const pct=Math.min((q.price/50)*100,100);
+        const bar=document.getElementById('vix-bar');
+        bar.style.width=pct+'%';
+        bar.style.background=q.price<15?'#3ddc84':q.price<25?'#ffb347':q.price<35?'#ff8c42':'#ff5c5c';
+      }
+      if(id==='QQQ')ndxPct=q.pct;
+      if(id==='KRW')krwChg=q.chg;
+      if(id==='TNX')bondVal=q.price;
+      if(id==='TSLA'){
+        document.getElementById('tsla-h').textContent=q.high?'$'+q.high.toFixed(2):'—';
+        document.getElementById('tsla-l').textContent=q.low?'$'+q.low.toFixed(2):'—';
+        document.getElementById('tsla-v').textContent=VOL(q.vol);
+      }
+    }catch(e){
+      const pe=document.getElementById('price-'+id);
+      if(pe){pe.textContent='ERR';pe.className='cp fl';}
+    }
+  }));
+
+  // 유가 전용
+  try{
+    const oil=await getQuote('CL=F');
+    oilPct=oil.pct;
+    document.getElementById('oil-price').textContent=P(oil.price);
+    document.getElementById('oil-price').className='oil-price '+(oil.chg>=0?'up':'dn');
+    const sign=oil.chg>=0?'+':'';
+    const oilChgEl=document.getElementById('oil-change');
+    oilChgEl.textContent=`${sign}$${Math.abs(oil.chg).toFixed(2)}  (${sign}${oil.pct.toFixed(2)}%)`;
+    oilChgEl.className='cc '+(oil.chg>=0?'up':'dn');
+    if(oil.high)document.getElementById('oil-high').textContent=P(oil.high);
+    if(oil.low)document.getElementById('oil-low').textContent=P(oil.low);
+    // 52주 레인지 (근사)
+    const lo52=oil.price*0.72, hi52=oil.price*1.28;
+    document.getElementById('oil-low52').textContent=P(lo52,0)+' 52W↓';
+    document.getElementById('oil-high52').textContent=P(hi52,0)+' 52W↑';
+    const pos=((oil.price-lo52)/(hi52-lo52)*100).toFixed(1);
+    document.getElementById('oil-needle').style.left=pos+'%';
+  }catch(e){}
+
+  // 브렌트
+  try{
+    const bz=await getQuote('BZ=F');
+    document.getElementById('brent-price').textContent=P(bz.price);
+    document.getElementById('brent-price').className='oil-stat-val '+(bz.chg>=0?'up':'dn');
+  }catch(e){}
+
+  // 나스닥100 히트맵 (상위 30개 병렬)
+  const hmData={};
+  const hmSlice=NDX100.slice(0,30);
+  await Promise.allSettled(hmSlice.map(async sym=>{
+    try{const q=await getQuote(sym);hmData[sym]={pct:q.pct,chg:q.chg};}catch(e){hmData[sym]={pct:0,chg:0};}
+  }));
+  renderHeatmap(hmData);
+
+  // TSLA intraday
+  try{
+    const pts=await getIntraday('TSLA');
+    if(pts.length)renderTslaChart(pts);
+  }catch(e){}
+
+  // 신호 패널
+  updateSignals(vixVal,window._fg,oilPct,ndxPct,krwChg,bondVal);
+
+  const now=new Date();
+  const ts=now.toLocaleTimeString('ko-KR');
+  document.getElementById('last-upd').textContent='LAST UPDATE: '+ts;
+  document.getElementById('footer-t').textContent=ts;
+  btn.textContent='↻ REFRESH';btn.classList.remove('spin');
+}
+
+fetchAll();
+setInterval(fetchAll,5*60*1000);
+</script>
+</body>
+</html>
