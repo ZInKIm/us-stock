@@ -284,8 +284,8 @@ footer{
         <div>전월 <span id="fg-pm">—</span></div>
         <div>전년 <span id="fg-py">—</span></div>
       </div>
-      <div style="height:6px;border-radius:3px;overflow:hidden;margin-top:12px;background:linear-gradient(90deg,#1a6fd4 0%,#6c9eea 25%,#f0a500 50%,#ff7043 75%,#d63031 100%);">
-        <div style="height:100%;background:rgba(0,0,0,0.3);border-radius:3px;transition:width 1s ease;" id="fg-bar-fill"></div>
+      <div style="position:relative;height:8px;border-radius:4px;margin-top:14px;background:linear-gradient(90deg,#1a6fd4 0%,#6c9eea 25%,#f0a500 50%,#ff7043 75%,#d63031 100%);">
+        <div id="fg-bar-fill" style="position:absolute;top:-3px;width:3px;height:14px;background:#1a1a2e;border-radius:2px;transition:left 1s ease;left:0%;"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:3px;">
         <span>극공포 0</span><span>공포 25</span><span>중립 50</span><span>탐욕 75</span><span>극탐욕 100</span>
@@ -497,7 +497,7 @@ footer{
   <div class="sec-label">채권 & 원자재</div>
   <div class="g2">
     <div class="card">
-      <div class="cl">TLT (10Y)</div><div class="cn">미국 10년 국채 ETF</div>
+      <div class="cl">TLT</div><div class="cn">10년 국채 ETF (금리 역방향)</div>
       <div class="cp" id="price-TNX">—</div><div class="cc" id="change-TNX">—</div>
     </div>
     <div class="card">
@@ -779,14 +779,14 @@ async function fetchAll(){
     document.getElementById('fg-pm').textContent=fg.pm;
     document.getElementById('fg-py').textContent=fg.py;
     const fill=document.getElementById('fg-bar-fill');
-    fill.style.width=fg.score+'%';
-    fill.style.background=fgColor(fg.score);
+    fill.style.left=`calc(${fg.score}% - 1.5px)`;
+    fill.style.background='#1a1a2e';
     window._fg=fg.score;
   }catch(e){document.getElementById('fg-title').textContent='F&G 로드 실패';}
 
   // 지수 & 다른 종목들
   const syms=[
-    ['SPY','SPY','price'],['QQQ','CME_MINI:NQ1!','price'],['DIA','DIA','price'],['VIX','UVXY','price'],
+    ['SPY','SPY','price'],['QQQ','QQQ','price'],['DIA','DIA','price'],['VIX','UVXY','price'],
     ['TSLA','TSLA','price'],
     ['TQQQ','TQQQ','price'],['SOXL','SOXL','price'],['UPRO','UPRO','price'],
     ['TSLL','TSLL','price'],['SQQQ','SQQQ','price'],['SPXS','SPXS','price'],
