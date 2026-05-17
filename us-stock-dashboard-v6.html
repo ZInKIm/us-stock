@@ -426,16 +426,8 @@ footer{
 
       <!-- 금 / 달러 -->
       <div class="g2">
-        <div class="card ab-yellow">
-          <div class="cl">GC=F</div><div class="cn">금 선물</div>
-          <div class="cp" id="price-GC">—</div>
-          <div class="cc" id="change-GC">—</div>
-        </div>
-        <div class="card">
-          <div class="cl">KRW=X</div><div class="cn">USD/KRW</div>
-          <div class="cp" id="price-KRW">—</div>
-          <div class="cc" id="change-KRW">—</div>
-        </div>
+
+
       </div>
     </div>
   </div>
@@ -503,22 +495,14 @@ footer{
 <!-- ═══ 6. 채권 ═══ -->
 <div class="section">
   <div class="sec-label">채권 & 원자재</div>
-  <div class="g4">
+  <div class="g2">
     <div class="card">
-      <div class="cl">^TNX</div><div class="cn">미국 10년 국채</div>
+      <div class="cl">TLT (10Y)</div><div class="cn">미국 10년 국채 ETF</div>
       <div class="cp" id="price-TNX">—</div><div class="cc" id="change-TNX">—</div>
     </div>
     <div class="card">
-      <div class="cl">^FVX</div><div class="cn">미국 5년 국채</div>
-      <div class="cp" id="price-FVX">—</div><div class="cc" id="change-FVX">—</div>
-    </div>
-    <div class="card">
-      <div class="cl">BZ=F</div><div class="cn">브렌트유 선물</div>
-      <div class="cp" id="price-BZ">—</div><div class="cc" id="change-BZ">—</div>
-    </div>
-    <div class="card">
-      <div class="cl">SI=F</div><div class="cn">은 선물</div>
-      <div class="cp" id="price-SI">—</div><div class="cc" id="change-SI">—</div>
+      <div class="cl">GLD</div><div class="cn">금 ETF</div>
+      <div class="cp" id="price-GC">—</div><div class="cc" id="change-GC">—</div>
     </div>
   </div>
 </div>
@@ -589,9 +573,14 @@ const SYM_MAP={
   'GC=F':'GLD','CL=F':'USO','BZ=F':'BNO','SI=F':'SLV',
 };
 
+let _fhLast=0; // 300ms between requests
 async function fhFetch(path){
+  const now=Date.now();
+  const wait=Math.max(0,300-(now-_fhLast));
+  if(wait>0)await new Promise(r=>setTimeout(r,wait));
+  _fhLast=Date.now();
   const url=`${FH}${path}&token=${FH_KEY}`;
-  const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
+  const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
   if(!r.ok)throw new Error(r.status);
   return r.json();
 }
@@ -798,13 +787,12 @@ async function fetchAll(){
     ['TSLA','TSLA','price'],
     ['TQQQ','TQQQ','price'],['SOXL','SOXL','price'],['UPRO','UPRO','price'],
     ['TSLL','TSLL','price'],['SQQQ','SQQQ','price'],['SPXS','SPXS','price'],
-    ['KRW','OANDA:USD_KRW','fx'],['GC','GLD','price'],
-    ['TNX','TLT','price'],['FVX','IEF','price'],['BZ','BNO','price'],['SI','SLV','price'],
+    ['GC','GLD','price'],['TNX','TLT','price'],
   ];
 
   let vixVal=null,ndxPct=null,oilPct=null,krwChg=null,bondVal=null;
 
-  await Promise.allSettled(syms.map(async([id,yfSym,fmt])=>{
+  for(const [id,yfSym,fmt] of syms){
     try{
       const q=await getQuote(yfSym);
       setCard(id,q.price,q.chg,q.pct,fmt);
@@ -827,7 +815,7 @@ async function fetchAll(){
       const pe=document.getElementById('price-'+id);
       if(pe){pe.textContent='ERR';pe.className='cp fl';}
     }
-  }));
+  }
 
   // 유가 전용
   try{
@@ -856,12 +844,12 @@ async function fetchAll(){
     document.getElementById('brent-price').className='oil-stat-val '+(bz.chg>=0?'up':'dn');
   }catch(e){}
 
-  // 나스닥100 히트맵 (상위 30개 병렬)
+  // 히트맵: rate limit 절약을 위해 주요 10개만
   const hmData={};
-  const hmSlice=NDX100.slice(0,30);
-  await Promise.allSettled(hmSlice.map(async sym=>{
+  const hmSlice=['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AVGO','NFLX','AMD'];
+  for(const sym of hmSlice){
     try{const q=await getQuote(sym);hmData[sym]={pct:q.pct,chg:q.chg};}catch(e){hmData[sym]={pct:0,chg:0};}
-  }));
+  }
   renderHeatmap(hmData);
 
   // TSLA intraday
