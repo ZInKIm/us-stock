@@ -3,8 +3,14 @@ export default async function handler(req, res) {
 
   try {
     const r = await fetch('https://production.dataviz.cnn.io/index/fearandgreed/graphdata', {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(8000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.cnn.com/',
+        'Origin': 'https://www.cnn.com',
+      },
+      signal: AbortSignal.timeout(10000),
     });
     if (!r.ok) throw new Error(`CNN ${r.status}`);
     const data = await r.json();

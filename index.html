@@ -274,6 +274,72 @@ footer{margin-top:22px;padding-top:12px;border-top:0.5px solid var(--border);dis
   </div>
 </div>
 
+<!-- NVDA -->
+<div class="section">
+  <div class="sec-label">엔비디아 NVDA</div>
+  <div class="g2">
+    <div class="tsla-card" style="border-left-color:var(--purple);">
+      <div class="cl">NVDA · NASDAQ</div>
+      <div class="cp" style="font-size:36px;" id="price-NVDA">—</div>
+      <div class="cc" style="font-size:15px;" id="change-NVDA">—</div>
+      <div class="div"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div><div class="cm">일 고가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="nvda-h">—</div></div>
+        <div><div class="cm">일 저가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="nvda-l">—</div></div>
+        <div><div class="cm">거래량</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="nvda-v">—</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">NVDA 5분봉 (ET)</div>
+      <div class="chart-wrap"><canvas id="nvda-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- NVDL -->
+<div class="section">
+  <div class="sec-label">엔비디아 2X 레버리지 NVDL</div>
+  <div class="g2">
+    <div class="tsla-card" style="border-left-color:var(--purple);">
+      <div class="cl">NVDL <span class="badge b-lev">2X 롱</span></div>
+      <div class="cp" style="font-size:36px;" id="price-NVDL">—</div>
+      <div class="cc" style="font-size:15px;" id="change-NVDL">—</div>
+      <div class="div"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div><div class="cm">일 고가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="nvdl-h">—</div></div>
+        <div><div class="cm">일 저가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="nvdl-l">—</div></div>
+        <div><div class="cm">거래량</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="nvdl-v">—</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">NVDL 5분봉 (ET)</div>
+      <div class="chart-wrap"><canvas id="nvdl-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- TSLL -->
+<div class="section">
+  <div class="sec-label">테슬라 2X 레버리지 TSLL</div>
+  <div class="g2">
+    <div class="tsla-card" style="border-left-color:var(--purple);">
+      <div class="cl">TSLL <span class="badge b-lev">2X 롱</span></div>
+      <div class="cp" style="font-size:36px;" id="price-TSLL2">—</div>
+      <div class="cc" style="font-size:15px;" id="change-TSLL2">—</div>
+      <div class="div"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div><div class="cm">일 고가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsll-h">—</div></div>
+        <div><div class="cm">일 저가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsll-l">—</div></div>
+        <div><div class="cm">거래량</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsll-v">—</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">TSLL 5분봉 (ET)</div>
+      <div class="chart-wrap"><canvas id="tsll-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
 <!-- 레버리지 ETF -->
 <div class="section">
   <div class="sec-label">레버리지 / 인버스 ETF</div>
@@ -342,7 +408,7 @@ function setCard(id,price,chg,pct,fmt){
   pe.className='cp '+(chg>0?'up':chg<0?'dn':'fl');
   if(ce){
     const s=chg>=0?'+':'';
-    const fc=fmt==='idx'?(s+chg.toFixed(2)):fmt==='bond'?(s+chg.toFixed(3)+'%'):fmt==='krw'?(s+chg.toFixed(1)+'₩'):(s+$(Math.abs(chg)));
+    const fc=fmt==='idx'?(s+chg.toFixed(2)):fmt==='vix'?(s+chg.toFixed(2)+'pt'):fmt==='bond'?(s+chg.toFixed(3)+'%'):fmt==='krw'?(s+chg.toFixed(1)+'₩'):(s+$(Math.abs(chg)));
     ce.textContent=`${fc}  (${PCT(pct)})`;
     ce.className='cc '+(chg>0?'up':chg<0?'dn':'fl');
   }
@@ -405,19 +471,7 @@ function renderHeatmap(data){
 /* ── TSLA 차트 ── */
 let tslaChart=null;
 function renderChart(pts){
-  const labels=pts.map(p=>p.t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}));
-  const vals=pts.map(p=>p.v);
-  const first=vals[0],last=vals[vals.length-1];
-  const c=last>=first?'#d63031':'#1a6fd4';
-  const ctx=document.getElementById('tsla-chart').getContext('2d');
-  if(tslaChart)tslaChart.destroy();
-  tslaChart=new Chart(ctx,{
-    type:'line',
-    data:{labels,datasets:[{data:vals,borderColor:c,borderWidth:1.5,pointRadius:0,tension:0.3,fill:{target:'origin',above:c+'15'}}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>' $'+c.parsed.y.toFixed(2)}}},
-      scales:{x:{ticks:{color:'#7a7a96',font:{size:8,family:'JetBrains Mono'},maxTicksLimit:6},grid:{color:'rgba(0,0,0,0.04)'}},
-              y:{ticks:{color:'#7a7a96',font:{size:8,family:'JetBrains Mono'},callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(0,0,0,0.04)'}}}}
-  });
+  tslaChart=renderChartOn('tsla-chart',pts,tslaChart);
 }
 
 /* ── MAIN ── */
@@ -453,6 +507,7 @@ async function fetchAll(){
     ['TQQQ','TQQQ','price'],['SOXL','SOXL','price'],['UPRO','UPRO','price'],
     ['TSLL','TSLL','price'],['SQQQ','SQQQ','price'],['SPXS','SPXS','price'],
     ['GC','GC=F','price'],['GLD','GLD','price'],['TNX','^TNX','bond'],
+    ['NVDA','NVDA','price'],['NVDL','NVDL','price'],['TSLL2','TSLL','price'],
   ];
 
   let vixVal=null,ndxPct=null,oilPct=null,bondVal=null;
@@ -479,6 +534,21 @@ async function fetchAll(){
         document.getElementById('tsla-h').textContent=q.high?$(q.high):'—';
         document.getElementById('tsla-l').textContent=q.low?$(q.low):'—';
         document.getElementById('tsla-v').textContent=VOL(q.vol);
+      }
+      if(id==='NVDA'){
+        document.getElementById('nvda-h').textContent=q.high?$(q.high):'—';
+        document.getElementById('nvda-l').textContent=q.low?$(q.low):'—';
+        document.getElementById('nvda-v').textContent=VOL(q.vol);
+      }
+      if(id==='NVDL'){
+        document.getElementById('nvdl-h').textContent=q.high?$(q.high):'—';
+        document.getElementById('nvdl-l').textContent=q.low?$(q.low):'—';
+        document.getElementById('nvdl-v').textContent=VOL(q.vol);
+      }
+      if(id==='TSLL2'){
+        document.getElementById('tsll-h').textContent=q.high?$(q.high):'—';
+        document.getElementById('tsll-l').textContent=q.low?$(q.low):'—';
+        document.getElementById('tsll-v').textContent=VOL(q.vol);
       }
     }catch(e){
       const pe=document.getElementById('price-'+id);
@@ -532,6 +602,10 @@ async function fetchAll(){
 
   // TSLA 차트
   try{const pts=await getIntraday('TSLA');if(pts.length)renderChart(pts);}catch(e){}
+  // NVDA/NVDL/TSLL 차트
+  try{const pts=await getIntraday('NVDA');if(pts.length)nvdaChart=renderChartOn('nvda-chart',pts,nvdaChart);}catch(e){}
+  try{const pts=await getIntraday('NVDL');if(pts.length)nvdlChart=renderChartOn('nvdl-chart',pts,nvdlChart);}catch(e){}
+  try{const pts=await getIntraday('TSLL');if(pts.length)tsllChart=renderChartOn('tsll-chart',pts,tsllChart);}catch(e){}
 
   const now=new Date();
   const ts=now.toLocaleTimeString('ko-KR');

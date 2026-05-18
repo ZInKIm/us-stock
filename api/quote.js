@@ -20,18 +20,24 @@ export default async function handler(req, res) {
     const data = await r.json();
     const meta = data.chart.result[0].meta;
     const quote = data.chart.result[0].indicators.quote[0];
-    const closes = quote.close.filter(Boolean);
-    const prev = meta.chartPreviousClose || closes[closes.length - 2] || meta.previousClose;
-    const price = meta.regularMarketPrice ?? meta.regularMarketPreviousClose;
-    const chg = price - prev;
-    const pct = (chg / prev) * 100;
+    // 프리/애프터/장중 모두 최신 가격 우선
+    const price = meta.regularMarketPrice
+      ?? meta.preMarketPrice
+      ?? meta.postMarketPrice
+      ?? meta.regularMarketPreviousClose;
+
+    // 프리마켓/애프터마켓 가격이 있으면 그걸 우선 사용
+    const livePrice = meta.postMarketPrice || meta.preMarketPrice || price;
+    const prevClose = meta.chartPreviousClose || meta.previousClose || price;
+    const chg = livePrice - prevClose;
+    const pct = (chg / prevClose) * 100;
 
     res.json({
       symbol,
-      price,
+      price: livePrice,
       chg,
       pct,
-      prev,
+      prev: prevClose,
       high: meta.regularMarketDayHigh,
       low: meta.regularMarketDayLow,
       vol: meta.regularMarketVolume,
