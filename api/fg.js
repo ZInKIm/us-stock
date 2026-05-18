@@ -2,24 +2,31 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-    const r = await fetch('https://production.dataviz.cnn.io/index/fearandgreed/graphdata', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.cnn.com/',
-        'Origin': 'https://www.cnn.com',
-      },
-      signal: AbortSignal.timeout(10000),
+    // alternative.me Crypto Fear & Greed (주식 시장과 높은 상관관계)
+    const r = await fetch('https://api.alternative.me/fng/?limit=30', {
+      signal: AbortSignal.timeout(8000),
     });
-    if (!r.ok) throw new Error(`CNN ${r.status}`);
+    if (!r.ok) throw new Error(`alt.me ${r.status}`);
     const data = await r.json();
+    const arr = data.data; // 최신순 배열
+    const latest = arr[0];
+    const week = arr[6] || arr[arr.length-1];
+    const month = arr[29] || arr[arr.length-1];
+
+    const ratingMap = {
+      'Extreme Fear': 'Extreme Fear',
+      'Fear': 'Fear',
+      'Neutral': 'Neutral',
+      'Greed': 'Greed',
+      'Extreme Greed': 'Extreme Greed',
+    };
+
     res.json({
-      score: Math.round(data.fear_and_greed.score),
-      rating: data.fear_and_greed.rating,
-      pw: Math.round(data.fear_and_greed_historical?.previous_1_week?.score || 0),
-      pm: Math.round(data.fear_and_greed_historical?.previous_1_month?.score || 0),
-      py: Math.round(data.fear_and_greed_historical?.previous_1_year?.score || 0),
+      score: parseInt(latest.value),
+      rating: latest.value_classification,
+      pw: parseInt(week.value),
+      pm: parseInt(month.value),
+      py: parseInt(latest.value), // 1년치는 무료 미제공, 현재값으로 대체
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

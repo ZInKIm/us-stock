@@ -415,6 +415,11 @@ function setCard(id,price,chg,pct,fmt){
 }
 
 /* ── API 호출 (Vercel serverless) ── */
+async function getCommodity(sym){
+  const r=await fetch(`/api/commodity?symbol=${encodeURIComponent(sym)}`,{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error(r.status);
+  return r.json();
+}
 async function getQuote(sym){
   const r=await fetch(`/api/quote?symbol=${encodeURIComponent(sym)}`,{signal:AbortSignal.timeout(10000)});
   if(!r.ok)throw new Error(r.status);
@@ -558,7 +563,7 @@ async function fetchAll(){
 
   // 유가
   try{
-    const oil=await getQuote('CL=F');
+    const oil=await getCommodity('CL=F');
     oilPct=oil.pct;
     document.getElementById('oil-price').textContent=$(oil.price);
     document.getElementById('oil-price').className='oil-price '+(oil.chg>=0?'up':'dn');
@@ -579,7 +584,7 @@ async function fetchAll(){
 
   // 브렌트유
   try{
-    const bz=await getQuote('BZ=F');
+    const bz=await getCommodity('BZ=F');
     document.getElementById('brent-price').textContent=$(bz.price);
     document.getElementById('brent-price').className='oil-stat-val '+(bz.chg>=0?'up':'dn');
   }catch(e){}
