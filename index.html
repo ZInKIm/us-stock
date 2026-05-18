@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US 마켓 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f5;
+  --s1: #ffffff;
+  --s2: #f7f8fa;
+  --s3: #eef0f3;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.15);
+  --text: #1a1a2e;
+  --muted: #7a7a96;
+  --dim: #b0b0c8;
+  --up: #d63031;
+  --dn: #1a6fd4;
+  --warn: #d68000;
+  --info: #1a6fd4;
+  --purple: #6c3fc7;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Noto Sans KR', sans-serif;
+  --r: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;padding:18px 22px;}
+header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:0.5px solid var(--border2);margin-bottom:18px;}
+.logo{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--info);}
+.logo em{color:var(--text);font-style:normal;}
+#clock{font-family:var(--mono);font-size:12px;color:var(--muted);}
+.mkt-badge{font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:3px 10px;border-radius:20px;margin-left:8px;}
+.open{background:rgba(214,48,49,0.1);color:var(--up);border:0.5px solid rgba(214,48,49,0.3);}
+.closed{background:rgba(90,90,114,0.1);color:var(--muted);border:0.5px solid var(--border2);}
+.pre{background:rgba(214,128,0,0.1);color:var(--warn);border:0.5px solid rgba(214,128,0,0.3);}
+.ctrl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.ctrl-left{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;}
+#refresh-btn{background:var(--s3);border:0.5px solid var(--border2);color:var(--text);padding:5px 16px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--sans);transition:all 0.15s;}
+#refresh-btn:hover{background:var(--s2);border-color:var(--info);}
+#refresh-btn.spin{opacity:0.5;pointer-events:none;}
+.sec-label{font-family:var(--mono);font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.sec-label::after{content:'';flex:1;height:0.5px;background:var(--border);}
+.section{margin-bottom:20px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.gauto{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.card{background:var(--s1);border:0.5px solid var(--border);border-radius:var(--r);padding:14px 16px;transition:border-color 0.2s;}
+.card:hover{border-color:var(--border2);}
+.cl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.cn{font-size:11px;color:var(--muted);margin-bottom:7px;}
+.cp{font-family:var(--mono);font-size:22px;font-weight:500;line-height:1;margin-bottom:4px;}
+.cc{font-family:var(--mono);font-size:12px;font-weight:500;}
+.cm{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;}
+.up{color:var(--up);} .dn{color:var(--dn);} .fl{color:var(--muted);}
+.ab-blue{border-left:2px solid var(--info);}
+.ab-green{border-left:2px solid var(--up);}
+.ab-red{border-left:2px solid var(--dn);}
+.ab-yellow{border-left:2px solid var(--warn);}
+.ab-purple{border-left:2px solid var(--purple);}
+.badge{display:inline-block;font-size:8px;font-family:var(--mono);padding:1px 6px;border-radius:3px;letter-spacing:0.5px;vertical-align:middle;margin-left:5px;}
+.b-lev{background:rgba(108,63,199,0.12);color:var(--purple);border:0.5px solid rgba(108,63,199,0.3);}
+.b-inv{background:rgba(26,111,212,0.1);color:var(--dn);border:0.5px solid rgba(26,111,212,0.2);}
+
+/* F&G */
+.fg-wrap{background:var(--s1);border:0.5px solid var(--border);border-radius:var(--r);padding:18px 22px;display:flex;align-items:center;gap:32px;margin-bottom:12px;}
+.fg-num{font-family:var(--mono);font-size:64px;font-weight:600;line-height:1;}
+.fg-right{flex:1;}
+.fg-title{font-size:18px;font-weight:500;margin-bottom:4px;}
+.fg-sub{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.6;}
+.fg-hist{display:flex;gap:18px;font-family:var(--mono);font-size:10px;color:var(--muted);}
+.fg-hist span{color:var(--text);}
+
+/* Signal */
+.signal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.sig-card{background:var(--s1);border:0.5px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:12px;}
+.sig-icon{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.sig-label{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:0.5px;}
+.sig-val{font-family:var(--mono);font-size:14px;font-weight:500;}
+.sig-desc{font-size:10px;color:var(--muted);margin-top:1px;}
+
+/* VIX bar */
+.vix-bar-bg{width:100%;height:5px;background:rgba(0,0,0,0.06);border-radius:3px;overflow:hidden;margin-top:8px;}
+.vix-bar-fill{height:100%;border-radius:3px;transition:width 0.8s;}
+.vix-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:3px;}
+
+/* Oil */
+.oil-card{background:var(--s1);border:0.5px solid var(--border);border-left:2px solid var(--warn);border-radius:var(--r);padding:16px;}
+.oil-price{font-family:var(--mono);font-size:28px;font-weight:500;margin:6px 0 4px;}
+.oil-range-bg{height:5px;background:rgba(0,0,0,0.06);border-radius:3px;position:relative;margin-top:10px;}
+.oil-needle{position:absolute;top:-4px;width:2px;height:13px;background:var(--warn);border-radius:1px;transform:translateX(-50%);}
+.oil-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;}
+.oil-stat-label{font-size:9px;color:var(--muted);font-family:var(--mono);}
+.oil-stat-val{font-family:var(--mono);font-size:12px;font-weight:500;margin-top:2px;}
+
+/* Heatmap */
+.heatmap-wrap{background:var(--s1);border:0.5px solid var(--border);border-radius:var(--r);padding:14px;}
+#heatmap-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:10px;}
+.hm-cell{border-radius:4px;padding:6px 4px;cursor:default;min-height:48px;}
+.hm-tick{font-family:var(--mono);font-size:9px;font-weight:600;color:#fff;}
+.hm-pct{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,0.85);margin-top:2px;}
+.hm-legend{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:8px;}
+.hm-leg-bar{flex:1;height:4px;border-radius:2px;background:linear-gradient(90deg,#1a6fd4,#888,#d63031);}
+
+/* Chart */
+.chart-card{background:var(--s1);border:0.5px solid var(--border);border-radius:var(--r);padding:14px 16px;}
+.chart-wrap{position:relative;height:130px;margin-top:10px;}
+
+/* TSLA big */
+.tsla-card{background:var(--s1);border:0.5px solid var(--border);border-left:2px solid var(--up);border-radius:var(--r);padding:18px 20px;}
+.div{height:0.5px;background:var(--border);margin:10px 0;}
+
+footer{margin-top:22px;padding-top:12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);}
+
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr);}.g3{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr;}.fg-wrap{flex-direction:column;gap:16px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><em>US</em> MARKET<em> · </em>DESK</div>
+  <div style="display:flex;align-items:center;">
+    <div id="clock">—</div>
+    <div id="mkt-badge" class="mkt-badge closed">CLOSED</div>
+  </div>
+</header>
+
+<div class="ctrl-row">
+  <div class="ctrl-left" id="last-upd">LAST UPDATE: —</div>
+  <button id="refresh-btn" onclick="fetchAll()">↻ REFRESH</button>
+</div>
+
+<!-- F&G -->
+<div class="section">
+  <div class="sec-label">공포탐욕 & 매매 신호</div>
+  <div class="fg-wrap">
+    <div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">FEAR & GREED INDEX</div>
+      <div class="fg-num" id="fg-num">—</div>
+      <div style="font-family:var(--mono);font-size:9px;margin-top:4px;" id="fg-label">—</div>
+    </div>
+    <div class="fg-right">
+      <div class="fg-title" id="fg-title">로딩 중...</div>
+      <div class="fg-sub" id="fg-sub"></div>
+      <div class="fg-hist">
+        <div>전주 <span id="fg-pw">—</span></div>
+        <div>전월 <span id="fg-pm">—</span></div>
+        <div>전년 <span id="fg-py">—</span></div>
+      </div>
+      <div style="position:relative;height:8px;border-radius:4px;margin-top:14px;background:linear-gradient(90deg,#1a6fd4 0%,#6c9eea 25%,#f0a500 50%,#ff7043 75%,#d63031 100%);">
+        <div id="fg-marker" style="position:absolute;top:-3px;width:3px;height:14px;background:#1a1a2e;border-radius:2px;transition:left 1s ease;left:0%;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:4px;">
+        <span>극공포 0</span><span>공포 25</span><span>중립 50</span><span>탐욕 75</span><span>극탐욕 100</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="signal-grid">
+    <div class="sig-card">
+      <div class="sig-icon" style="background:rgba(26,111,212,0.1);">📊</div>
+      <div><div class="sig-label">VIX LEVEL</div><div class="sig-val" id="sig-vix">—</div><div class="sig-desc" id="sig-vix-d">—</div></div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon" style="background:rgba(214,128,0,0.1);" id="sig-fg-icon">⚡</div>
+      <div><div class="sig-label">F&G 신호</div><div class="sig-val" id="sig-fg">—</div><div class="sig-desc" id="sig-fg-d">—</div></div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon" style="background:rgba(214,128,0,0.1);">🛢️</div>
+      <div><div class="sig-label">WTI 유가</div><div class="sig-val" id="sig-oil">—</div><div class="sig-desc" id="sig-oil-d">—</div></div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon" style="background:rgba(26,111,212,0.1);">💵</div>
+      <div><div class="sig-label">USD/KRW</div><div class="sig-val" id="sig-krw">—</div><div class="sig-desc" id="sig-krw-d">원달러 환율</div></div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon" style="background:rgba(26,111,212,0.1);">🏛️</div>
+      <div><div class="sig-label">10Y 금리</div><div class="sig-val" id="sig-bond">—</div><div class="sig-desc" id="sig-bond-d">미국 국채</div></div>
+    </div>
+    <div class="sig-card">
+      <div class="sig-icon" style="background:rgba(108,63,199,0.1);">📈</div>
+      <div><div class="sig-label">QQQ 모멘텀</div><div class="sig-val" id="sig-ndx">—</div><div class="sig-desc" id="sig-ndx-d">나스닥 당일</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 주요 지수 -->
+<div class="section">
+  <div class="sec-label">주요 지수</div>
+  <div class="g4">
+    <div class="card ab-blue">
+      <div class="cl">^GSPC</div><div class="cn">S&P 500 지수</div>
+      <div class="cp" id="price-SPY">—</div><div class="cc" id="change-SPY">—</div>
+    </div>
+    <div class="card ab-blue">
+      <div class="cl">^NDX</div><div class="cn">나스닥 100 지수</div>
+      <div class="cp" id="price-QQQ">—</div><div class="cc" id="change-QQQ">—</div>
+    </div>
+    <div class="card ab-blue">
+      <div class="cl">^DJI</div><div class="cn">다우 존스 지수</div>
+      <div class="cp" id="price-DIA">—</div><div class="cc" id="change-DIA">—</div>
+    </div>
+    <div class="card ab-yellow">
+      <div class="cl">^VIX</div><div class="cn">공포지수</div>
+      <div class="cp" id="price-VIX">—</div><div class="cc" id="change-VIX">—</div>
+      <div class="vix-bar-bg"><div class="vix-bar-fill" id="vix-bar" style="width:0%;"></div></div>
+      <div class="vix-ticks"><span>10</span><span>20</span><span>30</span><span>50+</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 히트맵 & 유가 -->
+<div class="section">
+  <div class="sec-label">나스닥 주요 종목 & 유가</div>
+  <div class="g2" style="align-items:start;">
+    <div class="heatmap-wrap">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">나스닥 100 주요 종목</div>
+      <div id="heatmap-grid"></div>
+      <div class="hm-legend"><span>하락</span><div class="hm-leg-bar"></div><span>상승</span></div>
+    </div>
+    <div>
+      <div class="oil-card" style="margin-bottom:10px;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">WTI CRUDE OIL · ^GSCI</div>
+        <div class="oil-price up" id="oil-price">—</div>
+        <div class="cc" id="oil-change">—</div>
+        <div class="oil-range-bg">
+          <div class="oil-needle" id="oil-needle" style="left:50%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;">
+          <span id="oil-low52">저점</span><span id="oil-high52">고점</span>
+        </div>
+        <div class="oil-stats">
+          <div><div class="oil-stat-label">일 고가</div><div class="oil-stat-val" id="oil-high">—</div></div>
+          <div><div class="oil-stat-label">일 저가</div><div class="oil-stat-val" id="oil-low">—</div></div>
+          <div><div class="oil-stat-label">브렌트유</div><div class="oil-stat-val" id="brent-price">—</div></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card ab-yellow">
+          <div class="cl">GC=F</div><div class="cn">금 선물</div>
+          <div class="cp" id="price-GC">—</div><div class="cc" id="change-GC">—</div>
+        </div>
+        <div class="card">
+          <div class="cl">USD/KRW</div><div class="cn">원달러 환율</div>
+          <div class="cp" id="price-KRW">—</div><div class="cc" id="change-KRW">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 테슬라 -->
+<div class="section">
+  <div class="sec-label">테슬라 TSLA</div>
+  <div class="g2">
+    <div class="tsla-card">
+      <div class="cl">TSLA · NASDAQ</div>
+      <div class="cp" style="font-size:36px;" id="price-TSLA">—</div>
+      <div class="cc" style="font-size:15px;" id="change-TSLA">—</div>
+      <div class="div"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div><div class="cm">일 고가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsla-h">—</div></div>
+        <div><div class="cm">일 저가</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsla-l">—</div></div>
+        <div><div class="cm">거래량</div><div style="font-family:var(--mono);font-size:12px;margin-top:2px;" id="tsla-v">—</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">TSLA 5분봉</div>
+      <div class="chart-wrap"><canvas id="tsla-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- 레버리지 ETF -->
+<div class="section">
+  <div class="sec-label">레버리지 / 인버스 ETF</div>
+  <div class="gauto">
+    <div class="card ab-purple"><div class="cl">TQQQ <span class="badge b-lev">3X 롱</span></div><div class="cn">나스닥 3배</div><div class="cp" id="price-TQQQ">—</div><div class="cc" id="change-TQQQ">—</div></div>
+    <div class="card ab-purple"><div class="cl">SOXL <span class="badge b-lev">3X 롱</span></div><div class="cn">반도체 3배</div><div class="cp" id="price-SOXL">—</div><div class="cc" id="change-SOXL">—</div></div>
+    <div class="card ab-purple"><div class="cl">UPRO <span class="badge b-lev">3X 롱</span></div><div class="cn">S&P 3배</div><div class="cp" id="price-UPRO">—</div><div class="cc" id="change-UPRO">—</div></div>
+    <div class="card ab-purple"><div class="cl">TSLL <span class="badge b-lev">2X 롱</span></div><div class="cn">테슬라 2배</div><div class="cp" id="price-TSLL">—</div><div class="cc" id="change-TSLL">—</div></div>
+    <div class="card ab-red"><div class="cl">SQQQ <span class="badge b-inv">3X 인버스</span></div><div class="cn">나스닥 -3배</div><div class="cp" id="price-SQQQ">—</div><div class="cc" id="change-SQQQ">—</div></div>
+    <div class="card ab-red"><div class="cl">SPXS <span class="badge b-inv">3X 인버스</span></div><div class="cn">S&P -3배</div><div class="cp" id="price-SPXS">—</div><div class="cc" id="change-SPXS">—</div></div>
+  </div>
+</div>
+
+<!-- 채권/금 -->
+<div class="section">
+  <div class="sec-label">채권 & 원자재</div>
+  <div class="g2">
+    <div class="card">
+      <div class="cl">^TNX</div><div class="cn">미국 10년 국채 금리</div>
+      <div class="cp" id="price-TNX">—</div><div class="cc" id="change-TNX">—</div>
+    </div>
+    <div class="card ab-yellow">
+      <div class="cl">GLD</div><div class="cn">금 ETF</div>
+      <div class="cp" id="price-GLD">—</div><div class="cc" id="change-GLD">—</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>DATA: YAHOO FINANCE · CNN F&G · FRANKFURTER</span>
+  <span id="footer-t">—</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ── 시계 & 장 상태 ── */
+function isDST(d){const j=new Date(d.getFullYear(),0,1).getTimezoneOffset(),u=new Date(d.getFullYear(),6,1).getTimezoneOffset();return Math.max(j,u)!==d.getTimezoneOffset();}
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=now.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul'});
+  const etOff=isDST(now)?-4:-5;
+  const et=new Date(now.getTime()+(etOff*3600*1000));
+  const h=et.getUTCHours(),m=et.getUTCMinutes(),min=h*60+m,wd=et.getUTCDay();
+  const el=document.getElementById('mkt-badge');
+  if(!wd||wd===6){el.textContent='CLOSED';el.className='mkt-badge closed';}
+  else if(min>=570&&min<960){el.textContent='● OPEN';el.className='mkt-badge open';}
+  else if(min>=540&&min<570){el.textContent='◐ PRE';el.className='mkt-badge pre';}
+  else if(min>=960&&min<1140){el.textContent='◑ AFTER';el.className='mkt-badge pre';}
+  else{el.textContent='CLOSED';el.className='mkt-badge closed';}
+}
+setInterval(updateClock,1000);updateClock();
+
+/* ── 포맷 ── */
+const $=(n,d=2)=>n==null?'—':'$'+n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const IDX=(n)=>n==null?'—':n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const PCT=(n,d=2)=>n==null?'—':(n>=0?'+':'')+n.toFixed(d)+'%';
+const VOL=(n)=>n==null?'—':n>=1e9?(n/1e9).toFixed(1)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n.toFixed(0);
+const KRW=(n)=>n==null?'—':n.toLocaleString('ko-KR',{minimumFractionDigits:1,maximumFractionDigits:1})+'₩';
+
+function setCard(id,price,chg,pct,fmt){
+  const pe=document.getElementById('price-'+id);
+  const ce=document.getElementById('change-'+id);
+  if(!pe)return;
+  const fp=fmt==='idx'?IDX(price):fmt==='vix'?price.toFixed(2):fmt==='bond'?price.toFixed(3)+'%':fmt==='krw'?KRW(price):$(price);
+  pe.textContent=fp;
+  pe.className='cp '+(chg>0?'up':chg<0?'dn':'fl');
+  if(ce){
+    const s=chg>=0?'+':'';
+    const fc=fmt==='idx'?(s+chg.toFixed(2)):fmt==='bond'?(s+chg.toFixed(3)+'%'):fmt==='krw'?(s+chg.toFixed(1)+'₩'):(s+$(Math.abs(chg)));
+    ce.textContent=`${fc}  (${PCT(pct)})`;
+    ce.className='cc '+(chg>0?'up':chg<0?'dn':'fl');
+  }
+}
+
+/* ── API 호출 (Vercel serverless) ── */
+async function getQuote(sym){
+  const r=await fetch(`/api/quote?symbol=${encodeURIComponent(sym)}`,{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error(r.status);
+  return r.json();
+}
+async function getIntraday(sym){
+  const r=await fetch(`/api/intraday?symbol=${encodeURIComponent(sym)}`,{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error(r.status);
+  const d=await r.json();
+  return d.points.map(p=>({t:new Date(p.t),v:p.v}));
+}
+async function getFG(){
+  const r=await fetch('/api/fg',{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error(r.status);
+  return r.json();
+}
+async function getKRW(){
+  const r=await fetch('/api/krw',{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error(r.status);
+  return r.json();
+}
+
+/* ── F&G 색상 ── */
+function fgColor(s){return s<=25?'#1a6fd4':s<=40?'#6c9eea':s<=60?'#f0a500':s<=75?'#ff7043':'#d63031';}
+function fgKor(r){const m={'Extreme Fear':'극도 공포','Fear':'공포','Neutral':'중립','Greed':'탐욕','Extreme Greed':'극도 탐욕'};return m[r]||r;}
+function fgSig(s){
+  if(s<=20)return['매수 신호','극공포 — 역발상 매수 구간'];
+  if(s<=35)return['매수 가능','공포 — 분할 매수 고려'];
+  if(s<=65)return['중립 관망','추세 확인 후 진입'];
+  if(s<=80)return['주의 과열','탐욕 — 신규 진입 자제'];
+  return['매도 신호','극탐욕 — 차익 실현 고려'];
+}
+
+/* ── 히트맵 ── */
+const HM_SYMS=['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AVGO','NFLX','AMD'];
+function hmColor(pct){
+  const c=Math.max(-5,Math.min(5,pct));
+  if(c<0){const t=Math.abs(c)/5;return`rgb(${Math.round(50+t*176)},${Math.round(80-t*50)},${Math.round(80+t*130)})`;}
+  const t=c/5;return`rgb(${Math.round(180-t*160)},${Math.round(80+t*100)},${Math.round(80-t*60)})`;
+}
+function renderHeatmap(data){
+  const g=document.getElementById('heatmap-grid');
+  g.innerHTML='';
+  Object.entries(data).forEach(([sym,{pct}])=>{
+    const cell=document.createElement('div');
+    cell.className='hm-cell';
+    cell.style.background=hmColor(pct);
+    cell.title=`${sym}: ${pct>=0?'+':''}${pct.toFixed(2)}%`;
+    cell.innerHTML=`<div class="hm-tick">${sym}</div><div class="hm-pct">${pct>=0?'+':''}${pct.toFixed(1)}%</div>`;
+    g.appendChild(cell);
+  });
+}
+
+/* ── TSLA 차트 ── */
+let tslaChart=null;
+function renderChart(pts){
+  const labels=pts.map(p=>p.t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}));
+  const vals=pts.map(p=>p.v);
+  const first=vals[0],last=vals[vals.length-1];
+  const c=last>=first?'#d63031':'#1a6fd4';
+  const ctx=document.getElementById('tsla-chart').getContext('2d');
+  if(tslaChart)tslaChart.destroy();
+  tslaChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{data:vals,borderColor:c,borderWidth:1.5,pointRadius:0,tension:0.3,fill:{target:'origin',above:c+'15'}}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>' $'+c.parsed.y.toFixed(2)}}},
+      scales:{x:{ticks:{color:'#7a7a96',font:{size:8,family:'JetBrains Mono'},maxTicksLimit:6},grid:{color:'rgba(0,0,0,0.04)'}},
+              y:{ticks:{color:'#7a7a96',font:{size:8,family:'JetBrains Mono'},callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(0,0,0,0.04)'}}}}
+  });
+}
+
+/* ── MAIN ── */
+async function fetchAll(){
+  const btn=document.getElementById('refresh-btn');
+  btn.textContent='LOADING...';btn.classList.add('spin');
+
+  // F&G
+  try{
+    const fg=await getFG();
+    const c=fgColor(fg.score);
+    document.getElementById('fg-num').textContent=fg.score;
+    document.getElementById('fg-num').style.color=c;
+    document.getElementById('fg-label').textContent=fgKor(fg.rating).toUpperCase();
+    document.getElementById('fg-label').style.color=c;
+    document.getElementById('fg-title').textContent=fgKor(fg.rating);
+    const [sv,sd]=fgSig(fg.score);
+    document.getElementById('fg-sub').textContent=sd;
+    document.getElementById('fg-pw').textContent=fg.pw;
+    document.getElementById('fg-pm').textContent=fg.pm;
+    document.getElementById('fg-py').textContent=fg.py;
+    document.getElementById('fg-marker').style.left=`calc(${fg.score}% - 1.5px)`;
+    // 신호 카드
+    document.getElementById('sig-fg').textContent=sv;
+    document.getElementById('sig-fg').style.color=c;
+    document.getElementById('sig-fg-d').textContent=sd;
+  }catch(e){document.getElementById('fg-title').textContent='F&G 로드 실패';}
+
+  // 주요 심볼들 (병렬)
+  const syms=[
+    ['SPY','^GSPC','idx'],['QQQ','^NDX','idx'],['DIA','^DJI','idx'],['VIX','^VIX','vix'],
+    ['TSLA','TSLA','price'],
+    ['TQQQ','TQQQ','price'],['SOXL','SOXL','price'],['UPRO','UPRO','price'],
+    ['TSLL','TSLL','price'],['SQQQ','SQQQ','price'],['SPXS','SPXS','price'],
+    ['GC','GC=F','price'],['GLD','GLD','price'],['TNX','^TNX','bond'],
+  ];
+
+  let vixVal=null,ndxPct=null,oilPct=null,bondVal=null;
+
+  await Promise.allSettled(syms.map(async([id,sym,fmt])=>{
+    try{
+      const q=await getQuote(sym);
+      setCard(id,q.price,q.chg,q.pct,fmt);
+      if(id==='VIX'){
+        vixVal=q.price;
+        const pct=Math.min((q.price/50)*100,100);
+        const bar=document.getElementById('vix-bar');
+        bar.style.width=pct+'%';
+        bar.style.background=q.price<15?'#1a6fd4':q.price<25?'#f0a500':q.price<35?'#ff7043':'#d63031';
+        // VIX 신호
+        const sv=document.getElementById('sig-vix');
+        sv.textContent=q.price.toFixed(2);
+        sv.className='sig-val '+(q.price<20?'dn':q.price<30?'fl':'up');
+        document.getElementById('sig-vix-d').textContent=q.price<15?'안정':q.price<25?'보통':q.price<35?'주의':'패닉';
+      }
+      if(id==='QQQ'){ndxPct=q.pct;document.getElementById('sig-ndx').textContent=PCT(q.pct);document.getElementById('sig-ndx').className='sig-val '+(q.pct>0?'up':'dn');document.getElementById('sig-ndx-d').textContent=q.pct>2?'강한 상승':q.pct<-2?'하락 압력':q.pct>0?'소폭 상승':'소폭 하락';}
+      if(id==='TNX'){bondVal=q.price;document.getElementById('sig-bond').textContent=q.price.toFixed(3)+'%';document.getElementById('sig-bond').className='sig-val '+(q.price>4.5?'up':'dn');document.getElementById('sig-bond-d').textContent=q.price>4.5?'금리 고공 — 성장주 압박':q.price<3.5?'금리 하락 — 성장주 우호':'금리 보통';}
+      if(id==='TSLA'){
+        document.getElementById('tsla-h').textContent=q.high?$(q.high):'—';
+        document.getElementById('tsla-l').textContent=q.low?$(q.low):'—';
+        document.getElementById('tsla-v').textContent=VOL(q.vol);
+      }
+    }catch(e){
+      const pe=document.getElementById('price-'+id);
+      if(pe){pe.textContent='ERR';pe.className='cp fl';}
+    }
+  }));
+
+  // 유가
+  try{
+    const oil=await getQuote('CL=F');
+    oilPct=oil.pct;
+    document.getElementById('oil-price').textContent=$(oil.price);
+    document.getElementById('oil-price').className='oil-price '+(oil.chg>=0?'up':'dn');
+    const s=oil.chg>=0?'+':'';
+    document.getElementById('oil-change').textContent=`${s}${$(Math.abs(oil.chg))}  (${PCT(oil.pct)})`;
+    document.getElementById('oil-change').className='cc '+(oil.chg>=0?'up':'dn');
+    if(oil.high)document.getElementById('oil-high').textContent=$(oil.high);
+    if(oil.low)document.getElementById('oil-low').textContent=$(oil.low);
+    document.getElementById('sig-oil').textContent=$(oil.price);
+    document.getElementById('sig-oil').className='sig-val '+(oil.pct>2?'up':oil.pct<-2?'dn':'fl');
+    document.getElementById('sig-oil-d').textContent=oil.pct>3?'유가 급등 — 인플레 압력':oil.pct<-3?'유가 급락 — 경기 우려':'유가 안정';
+    // 52주 근사
+    const lo=oil.price*0.75,hi=oil.price*1.25;
+    document.getElementById('oil-low52').textContent=$(lo,0)+' 52W↓';
+    document.getElementById('oil-high52').textContent=$(hi,0)+' 52W↑';
+    document.getElementById('oil-needle').style.left=((oil.price-lo)/(hi-lo)*100).toFixed(1)+'%';
+  }catch(e){}
+
+  // 브렌트유
+  try{
+    const bz=await getQuote('BZ=F');
+    document.getElementById('brent-price').textContent=$(bz.price);
+    document.getElementById('brent-price').className='oil-stat-val '+(bz.chg>=0?'up':'dn');
+  }catch(e){}
+
+  // KRW
+  try{
+    const krw=await getKRW();
+    setCard('KRW',krw.price,krw.chg,krw.pct,'krw');
+    document.getElementById('sig-krw').textContent=KRW(krw.price);
+    document.getElementById('sig-krw').className='sig-val '+(krw.chg>10?'up':krw.chg<-10?'dn':'fl');
+    document.getElementById('sig-krw-d').textContent=krw.chg>15?'달러 강세':krw.chg<-15?'달러 약세':'달러 보합';
+  }catch(e){console.warn('KRW',e);}
+
+  // 히트맵
+  const hmData={};
+  await Promise.allSettled(HM_SYMS.map(async sym=>{
+    try{const q=await getQuote(sym);hmData[sym]={pct:q.pct};}catch(e){hmData[sym]={pct:0};}
+  }));
+  renderHeatmap(hmData);
+
+  // TSLA 차트
+  try{const pts=await getIntraday('TSLA');if(pts.length)renderChart(pts);}catch(e){}
+
+  const now=new Date();
+  const ts=now.toLocaleTimeString('ko-KR');
+  document.getElementById('last-upd').textContent='LAST UPDATE: '+ts;
+  document.getElementById('footer-t').textContent=ts;
+  btn.textContent='↻ REFRESH';btn.classList.remove('spin');
+}
+
+fetchAll();
+setInterval(fetchAll,5*60*1000);
+</script>
+</body>
+</html>
