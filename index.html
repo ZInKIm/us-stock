@@ -192,19 +192,19 @@ footer{margin-top:22px;padding-top:12px;border-top:0.5px solid var(--border);dis
   <div class="sec-label">주요 지수</div>
   <div class="g4">
     <div class="card ab-blue">
-      <div class="cl">^GSPC</div><div class="cn">S&P 500 지수</div>
+      <div class="cl">SPY</div><div class="cn">S&P 500 ETF</div>
       <div class="cp" id="price-SPY">—</div><div class="cc" id="change-SPY">—</div>
     </div>
     <div class="card ab-blue">
-      <div class="cl">^NDX</div><div class="cn">나스닥 100 지수</div>
+      <div class="cl">QQQ</div><div class="cn">나스닥 100 ETF</div>
       <div class="cp" id="price-QQQ">—</div><div class="cc" id="change-QQQ">—</div>
     </div>
     <div class="card ab-blue">
-      <div class="cl">^DJI</div><div class="cn">다우 존스 지수</div>
+      <div class="cl">DIA</div><div class="cn">다우존스 ETF</div>
       <div class="cp" id="price-DIA">—</div><div class="cc" id="change-DIA">—</div>
     </div>
     <div class="card ab-yellow">
-      <div class="cl">^VIX</div><div class="cn">공포지수</div>
+      <div class="cl">UVXY</div><div class="cn">VIX 레버리지 ETF</div>
       <div class="cp" id="price-VIX">—</div><div class="cc" id="change-VIX">—</div>
       <div class="vix-bar-bg"><div class="vix-bar-fill" id="vix-bar" style="width:0%;"></div></div>
       <div class="vix-ticks"><span>10</span><span>20</span><span>30</span><span>50+</span></div>
@@ -502,11 +502,11 @@ async function fetchAll(){
 
   // 주요 심볼들 (병렬)
   const syms=[
-    ['SPY','^GSPC','idx'],['QQQ','^NDX','idx'],['DIA','^DJI','idx'],['VIX','^VIX','vix'],
+    ['SPY','SPY','price'],['QQQ','QQQ','price'],['DIA','DIA','price'],['VIX','UVXY','price'],
     ['TSLA','TSLA','price'],
     ['TQQQ','TQQQ','price'],['SOXL','SOXL','price'],['UPRO','UPRO','price'],
     ['TSLL','TSLL','price'],['SQQQ','SQQQ','price'],['SPXS','SPXS','price'],
-    ['GC','GC=F','price'],['GLD','GLD','price'],['TNX','^TNX','bond'],
+    ['GLD','GLD','price'],
     ['NVDA','NVDA','price'],['NVDL','NVDL','price'],['TSLL2','TSLL','price'],
   ];
 
@@ -584,6 +584,22 @@ async function fetchAll(){
     document.getElementById('brent-price').className='oil-stat-val '+(bz.chg>=0?'up':'dn');
   }catch(e){}
 
+  // 10Y 금리
+  try{
+    const tnxR=await fetch('/api/tnx',{signal:AbortSignal.timeout(10000)});
+    if(tnxR.ok){
+      const tnxD=await tnxR.json();
+      bondVal=tnxD.price;
+      const tnxP=document.getElementById('price-TNX');
+      const tnxC=document.getElementById('change-TNX');
+      if(tnxP){tnxP.textContent=tnxD.price.toFixed(3)+'%';tnxP.className='cp '+(tnxD.chg>0?'up':'dn');}
+      if(tnxC){const s=tnxD.chg>=0?'+':'';tnxC.textContent=s+tnxD.chg.toFixed(3)+'%  ('+s+tnxD.pct.toFixed(2)+'%)';tnxC.className='cc '+(tnxD.chg>0?'up':'dn');}
+      document.getElementById('sig-bond').textContent=tnxD.price.toFixed(3)+'%';
+      document.getElementById('sig-bond').className='sig-val '+(tnxD.price>4.5?'up':'dn');
+      document.getElementById('sig-bond-d').textContent=tnxD.price>4.5?'금리 고공 — 성장주 압박':tnxD.price<3.5?'금리 하락':'금리 보통';
+    }
+  }catch(e){console.warn('TNX',e);}
+
   // KRW
   try{
     const krw=await getKRW();
@@ -593,12 +609,15 @@ async function fetchAll(){
     document.getElementById('sig-krw-d').textContent=krw.chg>15?'달러 강세':krw.chg<-15?'달러 약세':'달러 보합';
   }catch(e){console.warn('KRW',e);}
 
-  // 히트맵
-  const hmData={};
-  await Promise.allSettled(HM_SYMS.map(async sym=>{
-    try{const q=await getQuote(sym);hmData[sym]={pct:q.pct};}catch(e){hmData[sym]={pct:0};}
-  }));
-  renderHeatmap(hmData);
+  // 히트맵 - 배치 요청
+  try{
+    const hmSyms=HM_SYMS.join(',');
+    const hmR=await fetch(`/api/batch?symbols=${encodeURIComponent(hmSyms)}`,{signal:AbortSignal.timeout(15000)});
+    if(hmR.ok){
+      const hmData=await hmR.json();
+      renderHeatmap(hmData);
+    }
+  }catch(e){console.warn('heatmap',e);}
 
   // TSLA 차트
   try{const pts=await getIntraday('TSLA');if(pts.length)renderChart(pts);}catch(e){}
