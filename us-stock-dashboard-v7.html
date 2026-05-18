@@ -351,22 +351,22 @@ footer{
   <div class="sec-label">주요 지수</div>
   <div class="g4">
     <div class="card ab-blue">
-      <div class="cl">^GSPC</div><div class="cn">S&P 500</div>
+      <div class="cl">SPY</div><div class="cn">S&P500 ETF</div>
       <div class="cp" id="price-SPY">—</div>
       <div class="cc" id="change-SPY">—</div>
     </div>
     <div class="card ab-blue">
-      <div class="cl">^NDX</div><div class="cn">나스닥 100</div>
+      <div class="cl">QQQ</div><div class="cn">나스닥100 ETF</div>
       <div class="cp" id="price-QQQ">—</div>
       <div class="cc" id="change-QQQ">—</div>
     </div>
     <div class="card ab-blue">
-      <div class="cl">^DJI</div><div class="cn">다우 존스</div>
+      <div class="cl">DIA</div><div class="cn">다우존스 ETF</div>
       <div class="cp" id="price-DIA">—</div>
       <div class="cc" id="change-DIA">—</div>
     </div>
     <div class="card ab-yellow">
-      <div class="cl">^VIX</div><div class="cn">VIX 공포지수</div>
+      <div class="cl">UVXY</div><div class="cn">VIX 단기 레버리지 ETF</div>
       <div class="cp" id="price-VIX">—</div>
       <div class="cc" id="change-VIX">—</div>
       <div class="vix-bar-bg"><div class="vix-bar-fill" id="vix-bar" style="width:0%;"></div></div>
@@ -497,8 +497,8 @@ footer{
   <div class="sec-label">채권 & 원자재</div>
   <div class="g2">
     <div class="card">
-      <div class="cl">TLT</div><div class="cn">10년 국채 ETF (금리 역방향)</div>
-      <div class="cp" id="price-TNX">—</div><div class="cc" id="change-TNX">—</div>
+      <div class="cl">US 10Y</div><div class="cn">미국 10년 국채 금리</div>
+      <div class="cp" id="price-TNX" style="font-size:18px;">—</div><div class="cc" id="change-TNX">—</div>
     </div>
     <div class="card">
       <div class="cl">GLD</div><div class="cn">금 ETF</div>
@@ -790,7 +790,7 @@ async function fetchAll(){
     ['TSLA','TSLA','price'],
     ['TQQQ','TQQQ','price'],['SOXL','SOXL','price'],['UPRO','UPRO','price'],
     ['TSLL','TSLL','price'],['SQQQ','SQQQ','price'],['SPXS','SPXS','price'],
-    ['GC','GLD','price'],['TNX','TLT','price'],
+    ['GC','GLD','price'],
   ];
 
   let vixVal=null,ndxPct=null,oilPct=null,krwChg=null,bondVal=null;
@@ -861,19 +861,45 @@ async function fetchAll(){
     if(pts.length)renderTslaChart(pts);
   }catch(e){}
 
-  // KRW 별도 fetch
+  // US 10Y 금리 별도 fetch (Finnhub economic)
   try{
-    const now2=Math.floor(Date.now()/1000);
-    const from2=now2-172800;
-    const krwD=await fhFetch(`/forex/candle?symbol=OANDA:USD_KRW&resolution=D&from=${from2}&to=${now2}`);
-    if(krwD&&krwD.s!=='no_data'&&krwD.c&&krwD.c.length>1){
-      const kp=krwD.c[krwD.c.length-1];
-      const kprev=krwD.c[krwD.c.length-2];
-      krwChg=kp-kprev;
-      // KRW 시그널 카드 업데이트
-      const kv=document.getElementById('sig-krw-val');
-      if(kv){kv.textContent=(krwChg>=0?'+':'')+krwChg.toFixed(1)+'₩ ('+kp.toFixed(1)+')';}
+    const bondD=await fhFetch('/economic/data?code=USTREASURY10Y');
+    if(bondD&&bondD.data&&bondD.data.length>0){
+      const latest=bondD.data[bondD.data.length-1];
+      const prev=bondD.data.length>1?bondD.data[bondD.data.length-2]:latest;
+      const rate=parseFloat(latest.value);
+      const prevRate=parseFloat(prev.value);
+      const chg=rate-prevRate;
+      const tnxP=document.getElementById('price-TNX');
+      const tnxC=document.getElementById('change-TNX');
+      if(tnxP){tnxP.textContent=rate.toFixed(3)+'%';tnxP.className='cp '+(chg>0?'up':'dn');}
+      if(tnxC){tnxC.textContent=(chg>=0?'+':'')+chg.toFixed(3)+'%';tnxC.className='cc '+(chg>0?'up':'dn');}
+      bondVal=rate;
     }
+  }catch(e){console.warn('10Y',e);}
+
+  // KRW: frankfurter.app (CORS 없음, 무료)
+  try{
+    const krwR=await fetch('https://api.frankfurter.app/latest?from=USD&to=KRW',{signal:AbortSignal.timeout(8000)});
+    const krwJ=await krwR.json();
+    const kp=krwJ.rates.KRW;
+    // 전일 데이터
+    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+    const yStr=yesterday.toISOString().split('T')[0];
+    let kprev=kp;
+    try{
+      const prevR=await fetch(`https://api.frankfurter.app/${yStr}?from=USD&to=KRW`,{signal:AbortSignal.timeout(5000)});
+      const prevJ=await prevR.json();
+      kprev=prevJ.rates.KRW||kp;
+    }catch(e2){}
+    krwChg=kp-kprev;
+    const kv=document.getElementById('sig-krw-val');
+    const sign=krwChg>=0?'+':'';
+    if(kv){
+      kv.textContent=`${kp.toFixed(1)}₩ (${sign}${krwChg.toFixed(1)})`;
+      kv.className='sig-val '+(krwChg>10?'up':krwChg<-10?'dn':'fl');
+    }
+    document.getElementById('sig-krw-desc').textContent=krwChg>15?'달러 강세 — 위험회피':krwChg<-15?'달러 약세 — 위험선호':'달러 보합';
   }catch(e){console.warn('KRW',e);}
 
   // 신호 패널
